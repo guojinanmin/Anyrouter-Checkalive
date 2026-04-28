@@ -9,11 +9,11 @@ on:
       base_url:
         description: 'API Base URL'
         required: false
-        default: 'https://anyrouter.top/v1'
+        default: 'https://a-ocnfniawgw.cn-shanghai.fcapp.run'
       model:
         description: 'Claude model for health checks'
         required: false
-        default: 'haiku'
+        default: 'opus[1m]'
 
 # Prevent concurrent runs stacking up
 concurrency:
@@ -39,7 +39,7 @@ jobs:
       - name: Run keepalive for all tokens
         env:
           ANYROUTER_TOKENS: ${{ secrets.ANYROUTER_TOKENS }}
-          BASE_URL: ${{ github.event.inputs.base_url || 'https://anyrouter.top/v1' }}
+          BASE_URL: ${{ github.event.inputs.base_url || 'https://a-ocnfniawgw.cn-shanghai.fcapp.run' }}
           MODEL: ${{ github.event.inputs.model || 'haiku' }}
           QQ_EMAIL: ${{ secrets.QQ_EMAIL }}
           QQ_SMTP_AUTH_CODE: ${{ secrets.QQ_SMTP_AUTH_CODE }}
