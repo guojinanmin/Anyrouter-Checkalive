@@ -40,7 +40,7 @@ jobs:
         env:
           ANYROUTER_TOKENS: ${{ secrets.ANYROUTER_TOKENS }}
           BASE_URL: ${{ github.event.inputs.base_url || 'https://a-ocnfniawgw.cn-shanghai.fcapp.run' }}
-          MODEL: ${{ github.event.inputs.model || 'haiku' }}
+          MODEL: ${{ github.event.inputs.model || 'opus[1m]' }}
           QQ_EMAIL: ${{ secrets.QQ_EMAIL }}
           QQ_SMTP_AUTH_CODE: ${{ secrets.QQ_SMTP_AUTH_CODE }}
           CI: "true"
