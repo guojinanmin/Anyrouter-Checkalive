@@ -1,0 +1,22 @@
+# Local environment config (contains secrets)
+.env
+
+# Claude local settings
+.claude/
+
+# Local task instructions
+任务说明.md
+
+# Other local files
+context_manager_example.py
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
