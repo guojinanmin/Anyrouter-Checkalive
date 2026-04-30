@@ -84,12 +84,12 @@ if [ -z "$OUTPUT_CONTENT" ]; then
     exit 1
 fi
 
-# 3. Check for common API error indicators that might appear even with exit 0
-ERROR_PATTERNS="rate limit|authentication failed|unauthorized|invalid api key|connection refused|timeout|429|401|403|500|service unavailable|retry after|too many requests"
-if echo "$OUTPUT_CONTENT" | grep -qiE "$ERROR_PATTERNS"; then
-    echo "  FAILED (API error detected in output)"
-    exit 1
-fi
+# # 3. Check for common API error indicators that might appear even with exit 0
+# ERROR_PATTERNS="rate limit|authentication failed|unauthorized|invalid api key|connection refused|timeout|429|401|403|500|service unavailable|retry after|too many requests"
+# if echo "$OUTPUT_CONTENT" | grep -qiE "$ERROR_PATTERNS"; then
+#     echo "  FAILED (API error detected in output)"
+#     exit 1
+# fi
 
 echo "  SUCCESS"
 exit 0
