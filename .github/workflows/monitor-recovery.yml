@@ -1,0 +1,44 @@
+name: Anyrouter Recovery Monitor
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'API Base URL'
+        required: false
+        default: 'https://a-ocnfniawgw.cn-shanghai.fcapp.run'
+      model:
+        description: 'Claude model for health checks'
+        required: false
+        default: 'opus[1m]'
+
+# Prevent concurrent runs stacking up
+concurrency:
+  group: monitor-recovery
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360  # 6h max
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Claude Code CLI
+        run: |
+          curl -fsSL https://claude.ai/install.sh | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Verify Claude CLI
+        run: claude --version
+
+      - name: Monitor tokens for recovery
+        env:
+          ANYROUTER_TOKENS: ${{ secrets.ANYROUTER_TOKENS }}
+          BASE_URL: ${{ github.event.inputs.base_url || 'https://a-ocnfniawgw.cn-shanghai.fcapp.run' }}
+          MODEL: ${{ github.event.inputs.model || 'opus[1m]' }}
+          QQ_EMAIL: ${{ secrets.QQ_EMAIL }}
+          QQ_SMTP_AUTH_CODE: ${{ secrets.QQ_SMTP_AUTH_CODE }}
+          CI: "true"
+        run: bash scripts/monitor-recovery.sh
