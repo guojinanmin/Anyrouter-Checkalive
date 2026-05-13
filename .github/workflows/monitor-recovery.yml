@@ -40,5 +40,6 @@ jobs:
           MODEL: ${{ github.event.inputs.model || 'opus[1m]' }}
           QQ_EMAIL: ${{ secrets.QQ_EMAIL }}
           QQ_SMTP_AUTH_CODE: ${{ secrets.QQ_SMTP_AUTH_CODE }}
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
           CI: "true"
         run: bash scripts/monitor-recovery.sh
