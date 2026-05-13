@@ -19,8 +19,7 @@ MODEL="${MODEL:-opus[1m]}"
 SLEEP_BETWEEN_TOKENS="${SLEEP_BETWEEN_TOKENS:-30}"         # seconds between tokens
 SLEEP_BETWEEN_ROUNDS="${SLEEP_BETWEEN_ROUNDS:-3000}"       # ~50 minutes between rounds
 MAX_DURATION_SEC="${MAX_DURATION_SEC:-21500}"               # ~5h58m (just under 6h limit)
-QQ_EMAIL="${QQ_EMAIL:-}"
-QQ_SMTP_AUTH_CODE="${QQ_SMTP_AUTH_CODE:-}"
+FEISHU_WEBHOOK_URL="${FEISHU_WEBHOOK_URL:-}"
 
 # --- Load tokens ---
 load_tokens() {
@@ -42,55 +41,60 @@ load_tokens() {
     exit 1
 }
 
-# --- Email report ---
-send_email() {
-    local subject="$1" body="$2"
-    if [ -z "$QQ_EMAIL" ] || [ -z "$QQ_SMTP_AUTH_CODE" ]; then
-        echo "  (Skipping email: QQ_EMAIL or QQ_SMTP_AUTH_CODE not configured)"
+# --- Feishu notification ---
+send_feishu_notification() {
+    local title="$1" body="$2"
+    if [ -z "$FEISHU_WEBHOOK_URL" ]; then
+        echo "  (Skipping Feishu notification: FEISHU_WEBHOOK_URL not configured)"
         return 0
     fi
 
-    # Verify curl supports SMTP (GitHub Actions curl usually does)
-    if ! curl --version 2>/dev/null | grep -qi "smtp"; then
-        echo "  Email failed: curl was not compiled with SMTP support"
-        return 1
-    fi
+    echo "  Sending Feishu notification ..."
 
-    # Write email to temp file (more reliable than here-string + stdin)
-    local mail_file
-    mail_file=$(mktemp)
-    cat > "$mail_file" <<EOF
-From: $QQ_EMAIL
-To: $QQ_EMAIL
-Subject: $subject
-Content-Type: text/plain; charset=utf-8
+    # Format body for Feishu (escape quotes and newlines)
+    local formatted_body
+    formatted_body=$(echo "$body" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
 
-$body
+    # Create JSON payload for Feishu card message
+    local payload
+    payload=$(cat <<EOF
+{
+    "msg_type": "post",
+    "content": {
+        "post": {
+            "zh_cn": {
+                "title": "$title",
+                "content": [
+                    [
+                        {
+                            "tag": "text",
+                            "text": "$formatted_body"
+                        }
+                    ]
+                ]
+            }
+        }
+    }
+}
 EOF
-
-    echo "  Sending email via QQ SMTP to $QQ_EMAIL ..."
+)
 
     local curl_exit=0
-    curl -sS --ssl-reqd --fail-with-body \
-        --url "smtps://smtp.qq.com:465" \
-        --user "$QQ_EMAIL:$QQ_SMTP_AUTH_CODE" \
-        --login-options "AUTH=LOGIN" \
-        --mail-from "$QQ_EMAIL" \
-        --mail-rcpt "$QQ_EMAIL" \
-        --upload-file "$mail_file" \
+    curl -sS --fail-with-body \
+        -X POST \
+        -H "Content-Type: application/json" \
+        -d "$payload" \
+        "$FEISHU_WEBHOOK_URL" \
         || curl_exit=$?
 
-    rm -f "$mail_file"
-
     if [ "$curl_exit" -eq 0 ]; then
-        echo "  Email sent to $QQ_EMAIL"
+        echo "  Feishu notification sent"
         return 0
     else
-        echo "  Email FAILED (curl exit: $curl_exit)"
+        echo "  Feishu notification FAILED (curl exit: $curl_exit)"
         echo "  Common causes:"
-        echo "    - QQ_SMTP_AUTH_CODE is wrong (it is NOT your QQ password)"
-        echo "    - Generate it at: QQ Mail -> Settings -> Account -> POP3/IMAP/SMTP"
-        echo "    - Network/firewall blocking smtps://smtp.qq.com:465"
+        echo "    - FEISHU_WEBHOOK_URL is invalid or expired"
+        echo "    - Network/firewall blocking the Feishu API"
         return 1
     fi
 }
@@ -191,7 +195,7 @@ while true; do
         HAS_SENT_REPORT=true
         echo ""
         echo "=== Sending final report ==="
-        send_email "Anyrouter Keepalive Report ($(date '+%Y-%m-%d'))" "$ALL_RESULTS" || true
+        send_feishu_notification "Anyrouter Keepalive Report ($(date '+%Y-%m-%d'))" "$ALL_RESULTS" || true
         echo ""
 
         # Do one more round if time allows, but signal it's the last
@@ -225,7 +229,7 @@ echo "========================================"
 
 # Send one final report if we never sent one (e.g. very short run)
 if [ "$HAS_SENT_REPORT" = false ]; then
-    send_email "Anyrouter Keepalive Report ($(date '+%Y-%m-%d'))" "$ALL_RESULTS" || true
+    send_feishu_notification "Anyrouter Keepalive Report ($(date '+%Y-%m-%d'))" "$ALL_RESULTS" || true
 fi
 
 echo "Done."
